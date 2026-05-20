@@ -109,7 +109,7 @@ EMOTION_META = {
 
 def show_emotion_cards(text):
     emotion = NRCLex(text)
-    scores = emotion.raw_emotion_scores
+    scores = emotion.affect_frequencies
     if not scores:
         st.info("No strong emotion detected in this text.")
         return
@@ -208,7 +208,7 @@ with tab2:
             for i, text in enumerate(df[column]):
                 cleaned = clean_text(str(text))
                 sentiments.append(get_sentiment(cleaned))
-                emotions   = NRCLex(str(text)).raw_emotion_scores
+                emotions = NRCLex(str(text)).affect_frequencies
                 emo_total  = sum(emotions.values()) or 1
                 happy_l.append(round(emotions.get("joy", 0)/emo_total*100, 1))
                 angry_l.append(round(emotions.get("anger", 0)/emo_total*100, 1))
