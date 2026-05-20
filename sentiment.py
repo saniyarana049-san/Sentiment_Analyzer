@@ -1,7 +1,21 @@
 import nltk
-from nltk.sentiment.vader import SentimentIntensityAnalyzer
+import ssl
 
-nltk.download('vader_lexicon', quiet=True)  # ← this line fixes cloud
+try:
+    _create_unverified_https_context = ssl._create_unverified_context
+except AttributeError:
+    pass
+else:
+    ssl._create_default_https_context = _create_unverified_https_context
+
+nltk.download('vader_lexicon', quiet=True)
+nltk.download('punkt', quiet=True)
+nltk.download('punkt_tab', quiet=True)
+nltk.download('averaged_perceptron_tagger', quiet=True)
+nltk.download('wordnet', quiet=True)
+nltk.download('omw-1.4', quiet=True)
+
+from nltk.sentiment.vader import SentimentIntensityAnalyzer
 
 def get_sentiment(text):
     sid = SentimentIntensityAnalyzer()
