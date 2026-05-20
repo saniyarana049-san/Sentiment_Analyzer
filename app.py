@@ -109,19 +109,31 @@ EMOTION_META = {
 
 def show_emotion_cards(text):
     emotion = NRCLex(text)
-    scores = emotion.affect_frequencies
+    
+    # try all possible attribute names
+    if hasattr(emotion, 'raw_emotion_scores'):
+        scores = emotion.raw_emotion_scores
+    elif hasattr(emotion, 'affect_frequencies'):
+        scores = emotion.affect_frequencies
+    elif hasattr(emotion, 'top_emotions'):
+        scores = dict(emotion.top_emotions)
+    else:
+        scores = {}
+
     if not scores:
         st.info("No strong emotion detected in this text.")
         return
-    total = sum(scores.values())
-    active = {k: round((v/total)*100, 1) 
-              for k, v in scores.items() 
+
+    total = sum(scores.values()) or 1
+    active = {k: round((v/total)*100, 1)
+              for k, v in scores.items()
               if k in EMOTION_META and v > 0}
-    active = dict(sorted(active.items(), 
+    active = dict(sorted(active.items(),
                          key=lambda x: x[1], reverse=True)[:4])
     if not active:
         st.info("No strong emotion detected.")
         return
+
     st.markdown("#### 🎭 Emotion Breakdown")
     cols = st.columns(len(active))
     for col, (emotion_name, pct) in zip(cols, active.items()):
@@ -208,7 +220,13 @@ with tab2:
             for i, text in enumerate(df[column]):
                 cleaned = clean_text(str(text))
                 sentiments.append(get_sentiment(cleaned))
-                emotions = NRCLex(str(text)).affect_frequencies
+                e = NRCLex(str(text))
+                if hasattr(e, 'raw_emotion_scores'):
+                    emotions = e.raw_emotion_scores
+                elif hasattr(e, 'affect_frequencies'):
+                    emotions = e.affect_frequencies
+                else:
+                    emotions = {}
                 emo_total  = sum(emotions.values()) or 1
                 happy_l.append(round(emotions.get("joy", 0)/emo_total*100, 1))
                 angry_l.append(round(emotions.get("anger", 0)/emo_total*100, 1))
