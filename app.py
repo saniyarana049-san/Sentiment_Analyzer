@@ -109,23 +109,14 @@ EMOTION_META = {
 
 def show_emotion_cards(text):
     emotion = NRCLex(text)
-    
-    # try all possible attribute names
-    if hasattr(emotion, 'raw_emotion_scores'):
-        scores = emotion.raw_emotion_scores
-    elif hasattr(emotion, 'affect_frequencies'):
-        scores = emotion.affect_frequencies
-    elif hasattr(emotion, 'top_emotions'):
-        scores = dict(emotion.top_emotions)
-    else:
-        scores = {}
+    emotion.load_raw_text(text)
+    scores = emotion.affect_frequencies
 
     if not scores:
         st.info("No strong emotion detected in this text.")
         return
 
-    total = sum(scores.values()) or 1
-    active = {k: round((v/total)*100, 1)
+    active = {k: round(v*100, 1)
               for k, v in scores.items()
               if k in EMOTION_META and v > 0}
     active = dict(sorted(active.items(),
@@ -221,18 +212,14 @@ with tab2:
                 cleaned = clean_text(str(text))
                 sentiments.append(get_sentiment(cleaned))
                 e = NRCLex(str(text))
-                if hasattr(e, 'raw_emotion_scores'):
-                    emotions = e.raw_emotion_scores
-                elif hasattr(e, 'affect_frequencies'):
-                    emotions = e.affect_frequencies
-                else:
-                    emotions = {}
-                emo_total  = sum(emotions.values()) or 1
-                happy_l.append(round(emotions.get("joy", 0)/emo_total*100, 1))
-                angry_l.append(round(emotions.get("anger", 0)/emo_total*100, 1))
-                sad_l.append(round(emotions.get("sadness", 0)/emo_total*100, 1))
-                surprise_l.append(round(emotions.get("surprise", 0)/emo_total*100, 1))
-                fear_l.append(round(emotions.get("fear", 0)/emo_total*100, 1))
+                e.load_raw_text(str(text))
+                emotions = e.affect_frequencies
+                emo_total = sum(emotions.values()) or 1
+                happy_l.append(round(emotions.get("joy", 0)*100, 1))
+                angry_l.append(round(emotions.get("anger", 0)*100, 1))
+                sad_l.append(round(emotions.get("sadness", 0)*100, 1))
+                surprise_l.append(round(emotions.get("surprise", 0)*100, 1))
+                fear_l.append(round(emotions.get("fear", 0)*100, 1))
                 bar.progress(int((i + 1) / total * 100),
                             text=f"Analyzing row {i+1} of {total}...")
             bar.empty()
