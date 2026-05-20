@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 import time
 from preprocess import clean_text
 from sentiment import get_sentiment
-import text2emotion as te
+from nrclex import NRCLex
 
 # ─── Page Config ───────────────────────────────────────────
 st.set_page_config(
@@ -97,33 +97,44 @@ def sentiment_class(label):
             "Neutral":  "neutral"}.get(label, "neutral")
 
 EMOTION_META = {
-    "Happy":    ("😊", "happy"),
-    "Angry":    ("😤", "angry"),
-    "Surprise": ("😲", "surprise"),
-    "Sad":      ("😢", "sad"),
-    "Fear":     ("😰", "fear"),
+    "joy":        ("😊", "#fff9c4", "#f9a825", "#92400e"),
+    "anger":      ("😤", "#ffcdd2", "#ef9a9a", "#991b1b"),
+    "surprise":   ("😲", "#e1bee7", "#ce93d8", "#6b21a8"),
+    "sadness":    ("😢", "#bbdefb", "#90caf9", "#1e40af"),
+    "fear":       ("😰", "#cfd8dc", "#90a4ae", "#1e293b"),
+    "disgust":    ("🤢", "#c8e6c9", "#81c784", "#1b5e20"),
+    "trust":      ("🤝", "#ffe0b2", "#ffb74d", "#e65100"),
+    "anticipation":("🤩", "#fce4ec", "#f48fb1", "#880e4f"),
 }
 
 def show_emotion_cards(text):
-    """Detect emotions and show colour coded cards."""
-    scores = te.get_emotion(text)          # returns dict
-    # filter out zero scores
-    active = {k: v for k, v in scores.items() if v > 0}
-
-    if not active:
+    emotion = NRCLex(text)
+    scores = emotion.raw_emotion_scores
+    if not scores:
         st.info("No strong emotion detected in this text.")
         return
-
+    total = sum(scores.values())
+    active = {k: round((v/total)*100, 1) 
+              for k, v in scores.items() 
+              if k in EMOTION_META and v > 0}
+    active = dict(sorted(active.items(), 
+                         key=lambda x: x[1], reverse=True)[:4])
+    if not active:
+        st.info("No strong emotion detected.")
+        return
     st.markdown("#### 🎭 Emotion Breakdown")
     cols = st.columns(len(active))
-    for col, (emotion, score) in zip(cols, active.items()):
-        emoji, css = EMOTION_META.get(emotion, ("🔵", "neutral"))
-        pct = round(score * 100, 1)
+    for col, (emotion_name, pct) in zip(cols, active.items()):
+        emoji, bg, border, text_color = EMOTION_META[emotion_name]
         col.markdown(
-            f'<div class="emotion-card {css}">'
-            f'{emoji}<br>{emotion}<br>'
-            f'<span style="font-size:1.3em">{pct}%</span>'
-            f'</div>',
+            f'<div class="emotion-card" style="background:{bg};'
+            f'border:2px solid {border};border-radius:12px;'
+            f'padding:16px 10px;text-align:center;">'
+            f'<div style="font-size:28px">{emoji}</div>'
+            f'<div style="font-size:13px;font-weight:500;color:{text_color}">'
+            f'{emotion_name.capitalize()}</div>'
+            f'<div style="font-size:22px;font-weight:500;color:{text_color}">'
+            f'{pct}%</div></div>',
             unsafe_allow_html=True
         )
 
@@ -190,21 +201,22 @@ with tab2:
         column = st.selectbox("Select the text column to analyze:", df.columns)
 
         if st.button("🚀 Run Bulk Analysis", use_container_width=False):
-            bar   = st.progress(0, text="Starting analysis...")
-            total = len(df)
+            bar     = st.progress(0, text="Starting analysis...")
+            total   = len(df)
             sentiments, happy_l, angry_l, sad_l, surprise_l, fear_l = [], [], [], [], [], []
 
             for i, text in enumerate(df[column]):
                 cleaned = clean_text(str(text))
                 sentiments.append(get_sentiment(cleaned))
-                emotions = te.get_emotion(str(text))
-                happy_l.append(round(emotions.get("Happy",    0) * 100, 1))
-                angry_l.append(round(emotions.get("Angry",    0) * 100, 1))
-                sad_l.append(  round(emotions.get("Sad",      0) * 100, 1))
-                surprise_l.append(round(emotions.get("Surprise", 0) * 100, 1))
-                fear_l.append( round(emotions.get("Fear",     0) * 100, 1))
+                emotions   = NRCLex(str(text)).raw_emotion_scores
+                emo_total  = sum(emotions.values()) or 1
+                happy_l.append(round(emotions.get("joy", 0)/emo_total*100, 1))
+                angry_l.append(round(emotions.get("anger", 0)/emo_total*100, 1))
+                sad_l.append(round(emotions.get("sadness", 0)/emo_total*100, 1))
+                surprise_l.append(round(emotions.get("surprise", 0)/emo_total*100, 1))
+                fear_l.append(round(emotions.get("fear", 0)/emo_total*100, 1))
                 bar.progress(int((i + 1) / total * 100),
-                             text=f"Analyzing row {i+1} of {total}...")
+                            text=f"Analyzing row {i+1} of {total}...")
             bar.empty()
 
             df['Sentiment'] = sentiments
