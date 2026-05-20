@@ -1,0 +1,9 @@
+streamlit
+pandas
+nltk
+textblob
+plotly
+wordcloud
+matplotlib
+nrclex
+text2emotion
