@@ -1,7 +1,7 @@
 import nltk
 from nltk.sentiment.vader import SentimentIntensityAnalyzer
 
-nltk.download('vader_lexicon')
+nltk.download('vader_lexicon', quiet=True)  # ← this line fixes cloud
 
 def get_sentiment(text):
     sid = SentimentIntensityAnalyzer()

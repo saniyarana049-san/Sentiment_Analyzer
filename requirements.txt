@@ -5,5 +5,4 @@ textblob
 plotly
 wordcloud
 matplotlib
-nrclex
 text2emotion
