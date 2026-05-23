@@ -63,12 +63,15 @@ st.markdown("""
         margin-bottom: 8px;
         font-size: 0.95em;
     }
+
+    /* FIX 1: metric-card now has explicit text color so numbers are visible */
     .metric-card {
         background: #f8f9fa;
         border-radius: 12px;
         padding: 20px;
         text-align: center;
         border: 1px solid #dee2e6;
+        color: #212529;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -145,7 +148,7 @@ def show_emotion_cards(text):
 tab1, tab2, tab3 = st.tabs(["✍️ Single Review", "📂 CSV Bulk Analysis", "🕓 History"])
 
 # ══════════════════════════════════════════════════════════
-# TAB 1 — Single Review
+# TAB 1 — Single Review  ← NOT TOUCHED, works perfectly
 # ══════════════════════════════════════════════════════════
 with tab1:
     st.subheader("Analyze a Single Review")
@@ -232,14 +235,34 @@ with tab2:
             df['Fear %']    = fear_l
 
             # ── Sentiment Metric Cards ──
+            # FIX 1: Added background color + explicit text color to each card
+            # so the numbers and labels are clearly visible (were invisible before)
             pos = (df['Sentiment'] == 'Positive').sum()
             neg = (df['Sentiment'] == 'Negative').sum()
             neu = (df['Sentiment'] == 'Neutral').sum()
 
             c1, c2, c3 = st.columns(3)
-            c1.markdown(f'<div class="metric-card">😊<br><b style="font-size:1.8em">{pos}</b><br>Positive</div>', unsafe_allow_html=True)
-            c2.markdown(f'<div class="metric-card">😞<br><b style="font-size:1.8em">{neg}</b><br>Negative</div>', unsafe_allow_html=True)
-            c3.markdown(f'<div class="metric-card">😐<br><b style="font-size:1.8em">{neu}</b><br>Neutral</div>', unsafe_allow_html=True)
+            c1.markdown(
+                f'<div class="metric-card" style="background:#d4edda;border:2px solid #c3e6cb;">'
+                f'<span style="font-size:1.8em">😊</span><br>'
+                f'<b style="font-size:1.8em;color:#155724">{pos}</b><br>'
+                f'<span style="color:#155724;font-weight:600">Positive</span></div>',
+                unsafe_allow_html=True
+            )
+            c2.markdown(
+                f'<div class="metric-card" style="background:#f8d7da;border:2px solid #f5c6cb;">'
+                f'<span style="font-size:1.8em">😞</span><br>'
+                f'<b style="font-size:1.8em;color:#721c24">{neg}</b><br>'
+                f'<span style="color:#721c24;font-weight:600">Negative</span></div>',
+                unsafe_allow_html=True
+            )
+            c3.markdown(
+                f'<div class="metric-card" style="background:#fff3cd;border:2px solid #ffeeba;">'
+                f'<span style="font-size:1.8em">😐</span><br>'
+                f'<b style="font-size:1.8em;color:#856404">{neu}</b><br>'
+                f'<span style="color:#856404;font-weight:600">Neutral</span></div>',
+                unsafe_allow_html=True
+            )
 
             st.markdown("<br>", unsafe_allow_html=True)
 
@@ -290,15 +313,29 @@ with tab2:
             st.plotly_chart(fig3, use_container_width=True)
 
             # ── Word Cloud ──
+            # FIX 2: Wrapped in try/except so errors don't crash the whole app.
+            # Also added .strip() check and plt.close() to prevent memory leaks.
             st.subheader("☁️ Word Cloud")
-            all_text = " ".join(df[column].astype(str).tolist())
-            wc  = WordCloud(width=800, height=300,
-                            background_color='white',
-                            colormap='cool').generate(all_text)
-            fig4, ax = plt.subplots(figsize=(10, 3))
-            ax.imshow(wc, interpolation='bilinear')
-            ax.axis('off')
-            st.pyplot(fig4)
+            all_text = " ".join(df[column].astype(str).tolist()).strip()
+            try:
+                if len(all_text) > 0:
+                    wc = WordCloud(
+                        width=800,
+                        height=300,
+                        background_color='white',
+                        colormap='cool',
+                        min_font_size=10,
+                        max_words=100
+                    ).generate(all_text)
+                    fig4, ax = plt.subplots(figsize=(10, 3))
+                    ax.imshow(wc, interpolation='bilinear')
+                    ax.axis('off')
+                    st.pyplot(fig4)
+                    plt.close(fig4)   # prevents memory leak on repeated uploads
+                else:
+                    st.warning("⚠️ Not enough text to generate a word cloud.")
+            except Exception as e:
+                st.error(f"Word cloud could not be generated: {e}")
 
             # ── Results Table ──
             st.subheader("📋 Detailed Results")
@@ -313,7 +350,7 @@ with tab2:
                                csv, "results.csv", "text/csv")
 
 # ══════════════════════════════════════════════════════════
-# TAB 3 — History
+# TAB 3 — History  ← NOT TOUCHED, works perfectly
 # ══════════════════════════════════════════════════════════
 with tab3:
     st.subheader("🕓 Analysis History (This Session)")
