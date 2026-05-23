@@ -164,7 +164,7 @@ with tab1:
         time.sleep(0.4)
         bar.progress(40, text="Running sentiment model...")
         cleaned = clean_text(user_input)
-        result  = get_sentiment(cleaned)
+        result  = get_sentiment(user_input)
         time.sleep(0.4)
         bar.progress(80, text="Detecting emotions...")
         time.sleep(0.4)
@@ -213,7 +213,7 @@ with tab2:
 
             for i, text in enumerate(df[column]):
                 cleaned = clean_text(str(text))
-                sentiments.append(get_sentiment(cleaned))
+                sentiments.append(get_sentiment(str(text)))
                 e = NRCLex(str(text))
                 e.load_raw_text(str(text))
                 emotions = e.affect_frequencies
@@ -316,7 +316,8 @@ with tab2:
             # FIX 2: Wrapped in try/except so errors don't crash the whole app.
             # Also added .strip() check and plt.close() to prevent memory leaks.
             st.subheader("☁️ Word Cloud")
-            all_text = " ".join(df[column].astype(str).tolist()).strip()
+            all_text = " ".join(df[column].dropna().astype(str).tolist()).strip()
+            all_text = " ".join([w for w in all_text.split() if w.lower() != 'nan'])
             try:
                 if len(all_text) > 0:
                     wc = WordCloud(
